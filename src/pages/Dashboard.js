@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 
 function Dashboard() {
@@ -6,16 +6,14 @@ function Dashboard() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
-    const token = localStorage.getItem("token");
-
     // ================= FETCH TASKS =================
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         try {
             const res = await axios.get(
                 "https://task-manager-backend-t3mq.onrender.com/task",
                 {
                     headers: {
-                        authorization: token
+                        Authorization: localStorage.getItem("token")
                     }
                 }
             );
@@ -24,7 +22,12 @@ function Dashboard() {
         } catch (error) {
             console.log(error);
         }
-    };
+    }, []);
+
+    // ================= USE EFFECT =================
+    useEffect(() => {
+        fetchTasks();
+    }, [fetchTasks]);
 
     // ================= ADD TASK =================
     const addTask = async () => {
@@ -34,12 +37,11 @@ function Dashboard() {
                 { title, description },
                 {
                     headers: {
-                        authorization: token
+                        Authorization: localStorage.getItem("token")
                     }
                 }
             );
 
-            alert("Task added 🚀");
             setTitle("");
             setDescription("");
             fetchTasks();
@@ -55,52 +57,25 @@ function Dashboard() {
                 `https://task-manager-backend-t3mq.onrender.com/task/${id}`,
                 {
                     headers: {
-                        authorization: token
+                        Authorization: localStorage.getItem("token")
                     }
                 }
             );
 
-            alert("Task deleted ❌");
             fetchTasks();
         } catch (error) {
             console.log(error);
         }
     };
 
-    // ================= UPDATE TASK =================
-    const updateTask = async (id, status) => {
-        try {
-            await axios.put(
-                `https://task-manager-backend-t3mq.onrender.com/task/${id}`,
-                { status },
-                {
-                    headers: {
-                        authorization: token
-                    }
-                }
-            );
-
-            alert("Task updated ✅");
-            fetchTasks();
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
-    useEffect(() => {
-        fetchTasks();
-    }, []);
-
+    // ================= UI =================
     return (
         <div style={{ textAlign: "center", marginTop: "50px" }}>
-            <h2>Dashboard 📊</h2>
-
-            {/* ADD TASK */}
-            <h3>Add Task ➕</h3>
+            <h2>Dashboard</h2>
 
             <input
                 type="text"
-                placeholder="Title"
+                placeholder="Task Title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
             />
@@ -108,45 +83,25 @@ function Dashboard() {
 
             <input
                 type="text"
-                placeholder="Description"
+                placeholder="Task Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
             />
             <br /><br />
 
-            <button onClick={addTask}>
-                Add Task
-            </button>
+            <button onClick={addTask}>Add Task</button>
 
-            {/* TASK LIST */}
             <h3>Your Tasks</h3>
 
-            {tasks.length === 0 ? (
-                <p>No tasks found</p>
-            ) : (
-                tasks.map((task) => (
-                    <div
-                        key={task._id}
-                        style={{
-                            border: "1px solid black",
-                            margin: "10px",
-                            padding: "10px"
-                        }}
-                    >
-                        <h4>{task.title}</h4>
-                        <p>{task.description}</p>
-                        <p>Status: {task.status}</p>
-
-                        <button onClick={() => updateTask(task._id, "completed")}>
-                            Mark Completed ✔
-                        </button>
-
-                        <button onClick={() => deleteTask(task._id)}>
-                            Delete ❌
-                        </button>
-                    </div>
-                ))
-            )}
+            {tasks.map((task) => (
+                <div key={task._id} style={{ margin: "10px" }}>
+                    <strong>{task.title}</strong> - {task.description}
+                    <br />
+                    <button onClick={() => deleteTask(task._id)}>
+                        Delete
+                    </button>
+                </div>
+            ))}
         </div>
     );
 }
